@@ -29,6 +29,15 @@
 </div>
 <div id="bg-container" class="overlay absolute-box"></div>
 
+<div>
+  <div id="bar">
+    <form onSubmit="return add_url()">
+      <input id="url_text" type="text"></input>
+    </form>
+  </div>
+  <p id="result"></p>
+</div>
+
 <script type="text/javascript">
 var currentModel = {title: "", artist: "", artwork: ""};
 var nextModels = [];
@@ -99,3 +108,33 @@ setInterval(function() {
 
 </script>
 
+<script type="text/javascript">
+function add_url() {
+  var song_url = $("#url_text").val();
+  var access_url = "./add_url?url=" + song_url;
+  $("#url_text").val("");
+
+  $.getJSON(access_url, function(data) {
+    $("#result").text( JSON.stringify(data) );
+  });
+
+  return false;
+}
+</script>
+
+<style type="text/css">
+#bar {
+  z-index: 2;
+  width: 100%;
+  height: 1em;
+  bottom: 1em;
+  left: 0px;
+  position: fixed;
+}
+#bar input {
+  width: 100%;
+}
+#result {
+  color: white;
+}
+</style>
