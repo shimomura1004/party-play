@@ -99,3 +99,28 @@ setInterval(function() {
 
 </script>
 
+<script type="text/javascript">
+$(function(){
+  $("body")
+    .on("dragover", function(e){
+      e.preventDefault();
+    })
+    .on("drop", function(e) {
+      e.preventDefault();
+
+      for(var i = 0;i<e.originalEvent.dataTransfer.files.length ;i++){
+        (function(file){
+          var fd = new FormData();
+          fd.append("file", file);
+
+          $.ajax("./add", {
+            method: 'POST',
+            contentType: false,
+            processData: false,
+            data: fd,
+          });
+        })(e.originalEvent.dataTransfer.files[i]);
+      }
+    });
+});
+</script>

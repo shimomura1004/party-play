@@ -1,3 +1,9 @@
+GIT
+  remote: git://github.com/arbarlow/ruby-mp4info.git
+  revision: 7cde76dc34108fdbb4dc1b4c3bb3ef30c4da403e
+  specs:
+    mp4info (1.7.3)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -170,6 +176,7 @@ DEPENDENCIES
   foreman
   jbuilder (~> 2.0)
   jquery-rails
+  mp4info!
   quiet_assets
   rails (= 4.1.0)
   redis

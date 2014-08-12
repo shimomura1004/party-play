@@ -29,6 +29,7 @@ gem 'spring',        group: :development
 gem 'redis'
 gem 'dnssd'
 gem 'airplay'
+gem 'mp4info', :git => 'git://github.com/arbarlow/ruby-mp4info.git', :require => 'mp4info'
 gem 'quiet_assets', group: :development
 gem 'foreman'
 

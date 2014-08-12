@@ -1,5 +1,6 @@
 require 'json'
 require 'yaml'
+require 'mp4info'
 
 class SongsController < ApplicationController
   protect_from_forgery except: [:add, :skip]
@@ -55,17 +56,33 @@ class SongsController < ApplicationController
   end
 
   def write_file(params)
+    info = {}
+    params.slice(:title, :artist).each{|k,v| info[k] = CGI.unescape(v)}
+
     filename = Time.now.strftime("%Y%m%d%H%M%S%L.m4a")
+
     path = File.expand_path(filename, dir)
     IO.binwrite(path, params[:file].read)
+    info[:path] = path
 
-    IO.binwrite(File.expand_path("#{filename}.artwork.jpg", dir), params[:artwork].read)
+    url = "http://#{request.host}:#{request.port}/music/#{filename}"
+    info[:url] = url
 
-    url =  "http://#{request.host}:#{request.port}/music/#{filename}"
+    if params[:artwork]
+      IO.binwrite(File.expand_path("#{filename}.artwork.jpg", dir), params[:artwork].read)
+      info[:artwork] = "#{url}.artwork.jpg"
+    else
+      mp4info = MP4Info.open(path)
+      if mp4info.COVR
+        IO.binwrite(File.expand_path("#{filename}.artwork.jpg", dir), mp4info.COVR)
+        info[:artwork] = "#{url}.artwork.jpg"
+        info[:title] = mp4info.NAM
+        info[:artist] = mp4info.ART
+      else
+        info[:artwork] = ""
+      end
+    end
 
-    info = ({path: path, url: url})
-    params.slice(:title, :artist).each{|k,v| info[k] = CGI.unescape(v)}
-    info['artwork'] = "#{url}.artwork.jpg"
     info
   end
 
