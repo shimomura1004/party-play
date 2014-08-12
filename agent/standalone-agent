@@ -1,6 +1,10 @@
 #!/usr/bin/env ruby
 
-Process.daemon if ARGV.include?("-d")
+if ARGV.include?("-d")
+  Process.daemon
+  open("tmp/pids/agent.pid", "w"){|f| f.write(Process.pid)}
+  Process.pid
+end
 
 require "redis"
 require_relative "../config/initializers/redis"
