@@ -118,6 +118,12 @@ $(function(){
             contentType: false,
             processData: false,
             data: fd,
+            xhr: function(){
+              var xhr = $.ajaxSettings.xhr();
+              xhr.upload.onprogress = function(evt){ console.log('progress', evt.loaded/evt.total*100) };
+              xhr.upload.onload = function(){ console.log('DONE!') };
+              return xhr;
+            },
           });
         })(e.originalEvent.dataTransfer.files[i]);
       }
