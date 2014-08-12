@@ -10,10 +10,10 @@ class SongsController < ApplicationController
   end
 
   def add_url
-    render :json => {:status => 'ng'} and return if params[:url].nil?
-
-    info = download_file_asynchronously(params)
-    render :json => {status: 'ok', info: info}
+    if params[:url]
+      info = download_file_asynchronously(params)
+      render :json => {status: 'ok', info: info}
+    end
   end
 
   def skip
