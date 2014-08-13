@@ -1,13 +1,13 @@
 require 'json'
 require 'yaml'
-require 'mp4info'
+require 'audioinfo'
 
 class SongsController < ApplicationController
   protect_from_forgery except: [:add, :skip]
 
   def add
     info = write_file params
-    save_info info
+    save_info info unless info.nil?
   end
 
   def add_url
@@ -55,32 +55,76 @@ class SongsController < ApplicationController
     YAML::load(File.read("#{Rails.root}/config/account.yml"))
   end
 
+  def url(filepath)
+    filename = File.basename(filepath)
+    "http://#{request.host}:#{request.port}/music/#{filename}"
+  end
+
+  def save_audiofile(id, file)
+    filename = id + File.extname(file.original_filename)
+    path = File.expand_path(filename, dir)
+    IO.binwrite(path, file.read)
+
+    return path
+  end
+
+  def save_artwork(id, image_data)
+    ext = nil
+
+    db = {
+      Regexp.new("\xFF\xD8".force_encoding("BINARY"), Regexp::FIXEDENCODING) => ".jpg",
+      Regexp.new("\x89PNG".force_encoding("BINARY"), Regexp::FIXEDENCODING) => ".png",
+      Regexp.new("GIF8[79]a".force_encoding("BINARY"), Regexp::FIXEDENCODING) => ".gif"
+    }
+
+    # remove needless header from image data
+    db.each do |mark, type|
+      match_index = (mark =~ image_data)
+      if match_index and match_index < 20
+        ext = type
+        image_data = image_data.slice(match_index .. -1)
+        break
+      end
+    end
+
+    filename = "#{id}.artwork#{ext}"
+    path = File.expand_path(filename, dir)
+    IO.binwrite(path, image_data)
+
+    return path
+  end
+
   def write_file(params)
     info = {}
     params.slice(:title, :artist).each{|k,v| info[k] = CGI.unescape(v)}
 
-    filename = Time.now.strftime("%Y%m%d%H%M%S%L.m4a")
+    id = Time.now.strftime("%Y%m%d%H%M%S%L")
 
-    path = File.expand_path(filename, dir)
-    IO.binwrite(path, params[:file].read)
-    info[:path] = path
+    begin
+      filepath = save_audiofile(id, params[:file])
+      info[:path] = filepath
 
-    url = "http://#{request.host}:#{request.port}/music/#{filename}"
-    info[:url] = url
+
+      info[:url] = url(filepath)
+
+      audioinfo = AudioInfo.open(filepath)
+    rescue => e
+      Rails.logger.error(e)
+      File::delete(filepath) if filepath and File::exists?(filepath)
+      return nil
+    end
+
+    info[:title]   ||= audioinfo.title
+    info[:artist]  ||= audioinfo.artist
 
     if params[:artwork]
-      IO.binwrite(File.expand_path("#{filename}.artwork.jpg", dir), params[:artwork].read)
-      info[:artwork] = "#{url}.artwork.jpg"
+      filepath = save_artwork(id, params[:artwork].read)
+      info[:artwork] = url(filepath)
+    elsif audioinfo.picture
+      filepath = save_artwork(id, audioinfo.picture)
+      info[:artwork] = url(filepath)
     else
-      mp4info = MP4Info.open(path)
-      if mp4info.COVR
-        IO.binwrite(File.expand_path("#{filename}.artwork.jpg", dir), mp4info.COVR)
-        info[:artwork] = "#{url}.artwork.jpg"
-        info[:title] = mp4info.NAM
-        info[:artist] = mp4info.ART
-      else
-        info[:artwork] = ""
-      end
+      info[:artwork] = ""
     end
 
     info
